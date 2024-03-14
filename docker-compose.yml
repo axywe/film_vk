@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  filmotheka:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=filmotheka_user
+      - DB_PASSWORD=filmotheka_pass
+      - DB_NAME=filmotheka_db
+
+  db:
+    image: postgres:13
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: filmotheka_user
+      POSTGRES_PASSWORD: filmotheka_pass
+      POSTGRES_DB: filmotheka_db
+    volumes:
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
