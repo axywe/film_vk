@@ -4,9 +4,11 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/axywe/filmotheka/pkg/actor"
-	"github.com/axywe/filmotheka/pkg/movie"
-	"github.com/axywe/filmotheka/pkg/storage"
+	"github.com/axywe/filmotheka_vk/internal/auth"
+	"github.com/axywe/filmotheka_vk/internal/middleware"
+	"github.com/axywe/filmotheka_vk/pkg/actor"
+	"github.com/axywe/filmotheka_vk/pkg/movie"
+	"github.com/axywe/filmotheka_vk/pkg/storage"
 )
 
 func main() {
@@ -18,9 +20,11 @@ func main() {
 
 	actorHandler := actor.NewHandler(db)
 	movieHandler := movie.NewHandler(db)
+	authHandler := auth.NewHandler(db)
 
-	http.HandleFunc("/actors", actorHandler.ServeHTTP)
-	http.HandleFunc("/movies", movieHandler.ServeHTTP)
+	http.Handle("/actors", middleware.RoleCheckMiddleware(actorHandler))
+	http.Handle("/movies", middleware.RoleCheckMiddleware(movieHandler))
+	http.HandleFunc("/auth", authHandler.ServeHTTP)
 
 	log.Println("Starting server on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))

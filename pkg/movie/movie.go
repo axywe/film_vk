@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 )
@@ -103,19 +104,26 @@ func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
+	query := "SELECT id, title, description, release_date, rating FROM movies"
+
+	search := r.URL.Query().Get("search")
+	if search != "" {
+		query += fmt.Sprintf(" WHERE title ILIKE '%%%s%%'", search)
+	}
+
 	sortBy := r.URL.Query().Get("sortBy")
 	if sortBy != "title" && sortBy != "rating" && sortBy != "release_date" {
 		sortBy = "rating"
 	}
 	sortOrder := r.URL.Query().Get("sortOrder")
-	if sortOrder == "desc" || (sortBy == "rating" && sortOrder == "asc") {
+	if sortOrder == "desc" || (sortBy == "rating" && sortOrder != "asc") {
 		sortBy += " DESC"
 	} else {
 		sortBy += " ASC"
 	}
 
-	query := fmt.Sprintf("SELECT id, title, description, release_date, rating FROM movies ORDER BY %s", sortBy)
-
+	query += fmt.Sprintf(" ORDER BY %s", sortBy)
+	log.Println(query)
 	rows, err := h.db.Query(query)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

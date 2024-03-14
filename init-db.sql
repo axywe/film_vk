@@ -1,13 +1,9 @@
-DROP TABLE IF EXISTS actors;
-
 CREATE TABLE IF NOT EXISTS actors (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     gender VARCHAR(50),
     birthdate DATE NOT NULL
 );
-
-DROP TABLE IF EXISTS movies;
 
 CREATE TABLE IF NOT EXISTS movies (
     id SERIAL PRIMARY KEY,
@@ -17,8 +13,6 @@ CREATE TABLE IF NOT EXISTS movies (
     rating DECIMAL(3, 1) CHECK (rating >= 0 AND rating <= 10)
 );
 
-DROP TABLE IF EXISTS actor_movie;
-
 CREATE TABLE IF NOT EXISTS actor_movie (
     actor_id INT NOT NULL,
     movie_id INT NOT NULL,
@@ -26,3 +20,15 @@ CREATE TABLE IF NOT EXISTS actor_movie (
     FOREIGN KEY (actor_id) REFERENCES actors (id) ON DELETE CASCADE,
     FOREIGN KEY (movie_id) REFERENCES movies (id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role int NOT NULL
+);
+
+
+-- Test data
+INSERT INTO users (username, password, role) VALUES ('admin', '$2a$10$NjIPpHePTDy5hJs/JmX90uWxWT5jOqrw0OyrBg88lmiQvlHQHbAXu', 1);
+INSERT INTO users (username, password, role) VALUES ('user', '$2a$10$ajvqHTuI3ixFdkI2WUJrF.KPPp2etsdgtj/jccMH0yek7W8JZK3P6', 2);
