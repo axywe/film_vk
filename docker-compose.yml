@@ -4,24 +4,24 @@ services:
   filmotheka:
     build: .
     ports:
-      - "8080:8080"
+      - "${SERVER_PORT}:${SERVER_PORT}"
     depends_on:
       - db
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=filmotheka_user
-      - DB_PASSWORD=filmotheka_pass
-      - DB_NAME=filmotheka_db
+      - DB_HOST=${POSTGRES_HOST}
+      - DB_PORT=${POSTGRES_PORT}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
 
   db:
     image: postgres:13
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
     environment:
-      POSTGRES_USER: filmotheka_user
-      POSTGRES_PASSWORD: filmotheka_pass
-      POSTGRES_DB: filmotheka_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
       - db-data:/var/lib/postgresql/data

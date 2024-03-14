@@ -6,17 +6,14 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/axywe/filmotheka/pkg/actor"
 )
 
 type Movie struct {
-	ID          int             `json:"id,omitempty"`
-	Title       string          `json:"title"`
-	Description string          `json:"description"`
-	ReleaseDate time.Time       `json:"releaseDate"`
-	Rating      float64         `json:"rating"`
-	Actors      []actor.Actor   `json:"actors"`
+	ID          int       `json:"id,omitempty"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	ReleaseDate time.Time `json:"releaseDate"`
+	Rating      float64   `json:"rating"`
 }
 
 type Handler struct {
@@ -58,7 +55,6 @@ func (h *Handler) createMovie(w http.ResponseWriter, r *http.Request) {
 	}
 
 	m.ID = id
-	// Assuming there's a function to associate actors with the movie, not shown here for brevity
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(m)
 }
@@ -81,7 +77,6 @@ func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(m)
 }
 
-// deleteMovie handles DELETE requests to remove a movie
 func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
@@ -89,8 +84,15 @@ func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlStatement := `DELETE FROM movies WHERE id = $1;`
+	sqlStatement := `DELETE FROM actors_movie WHERE film_id = $1;`
 	_, err := h.db.Exec(sqlStatement, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	sqlStatement = `DELETE FROM movies WHERE id = $1;`
+	_, err = h.db.Exec(sqlStatement, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -100,9 +102,21 @@ func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Movie with ID %s was deleted successfully", id)
 }
 
-// getMovies handles GET requests to fetch all movies
 func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
-	rows, err := h.db.Query("SELECT id, title, description, release_date, rating FROM movies")
+	sortBy := r.URL.Query().Get("sortBy")
+	if sortBy != "title" && sortBy != "rating" && sortBy != "release_date" {
+		sortBy = "rating"
+	}
+	sortOrder := r.URL.Query().Get("sortOrder")
+	if sortOrder == "desc" || (sortBy == "rating" && sortOrder == "asc") {
+		sortBy += " DESC"
+	} else {
+		sortBy += " ASC"
+	}
+
+	query := fmt.Sprintf("SELECT id, title, description, release_date, rating FROM movies ORDER BY %s", sortBy)
+
+	rows, err := h.db.Query(query)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -116,7 +130,6 @@ func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		// Assuming there's a function to fetch actors for each movie, not shown here for brevity
 		movies = append(movies, m)
 	}
 	if err := rows.Err(); err != nil {

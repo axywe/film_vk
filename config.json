@@ -1,0 +1,7 @@
+{
+    "port": 5432,
+    "host": "localhost",
+    "username": "filmotheka_user",
+    "password": "filmotheka_pass",
+    "database": "filmotheka_db"
+}
