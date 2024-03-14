@@ -46,6 +46,16 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Create a new actor
+// @Security ApiKeyAuth
+// @Tags Actors
+// @Accept json
+// @Produce json
+// @Param actor body Actor true "Actor to create"
+// @Success 201 {object} Actor "Actor created"
+// @Failure 400 "Bad request"
+// @Failure 500 "Internal server error"
+// @Router /actors [post]
 func (h *Handler) createActor(w http.ResponseWriter, r *http.Request) {
 	var a Actor
 	if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
@@ -76,6 +86,16 @@ func (h *Handler) createActor(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(a)
 }
 
+// @Summary Update an actor
+// @Security ApiKeyAuth
+// @Tags Actors
+// @Accept json
+// @Produce json
+// @Param actor body Actor true "Actor with updated information"
+// @Success 200 {object} Actor "Actor updated"
+// @Failure 400 "Bad request"
+// @Failure 500 "Internal server error"
+// @Router /actors [put]
 func (h *Handler) updateActor(w http.ResponseWriter, r *http.Request) {
 	var a Actor
 	if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
@@ -146,6 +166,13 @@ func (h *Handler) updateActor(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(a)
 }
 
+// @Summary Delete an actor
+// @Security ApiKeyAuth
+// @Tags Actors
+// @Success 200 "Actor deleted"
+// @Failure 400 "Bad request"
+// @Failure 500 "Internal server error"
+// @Router /actors [delete]
 func (h *Handler) deleteActor(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
@@ -171,6 +198,13 @@ func (h *Handler) deleteActor(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Actor with ID %s was deleted successfully", id)
 }
 
+// @Summary Get list of actors
+// @Security ApiKeyAuth
+// @Tags Actors
+// @Produce json
+// @Success 200 {array} Actor "List of actors"
+// @Failure 500 "Internal server error"
+// @Router /actors [get]
 func (h *Handler) getActors(w http.ResponseWriter, _ *http.Request) {
 	var actors []Actor
 

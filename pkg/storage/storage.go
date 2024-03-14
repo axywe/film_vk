@@ -11,13 +11,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func init() {
+func InitDB() (*sql.DB, error) {
 	if err := godotenv.Load(".env"); err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
-}
-
-func InitDB() (*sql.DB, error) {
 	time.Sleep(5 * time.Second)
 	host := os.Getenv("POSTGRES_HOST")
 	port := os.Getenv("POSTGRES_PORT")

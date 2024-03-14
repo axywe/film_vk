@@ -3,13 +3,18 @@ package auth
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// Credentials represents the username and password provided by a user for authentication
+type Credentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
 
 type Handler struct {
 	db *sql.DB
@@ -21,16 +26,25 @@ func NewHandler(db *sql.DB) *Handler {
 	}
 }
 
+// @Summary Authentication Processing
+// @Description Processes POST user authentication requests and generates JWT tokens.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param credentials body Credentials true "User credentials"
+// @Success 200 {object} map[string]string "Successful authentication"
+// @Failure 400 {string} string "Invalid input data"
+// @Failure 401 {string} string "User not found or invalid credentials"
+// @Failure 405 {string} string "Only the POST method is allowed"
+// @Failure 500 {string} string "Server error"
+// @Router /auth [post]
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var creds struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
+	var creds Credentials
 
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -51,9 +65,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password)); err != nil {
-		a, _ := bcrypt.GenerateFromPassword([]byte(creds.Password), 10)
-		log.Println(string(a[:]), creds.Password)
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}

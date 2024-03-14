@@ -40,6 +40,16 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Create a new movie
+// @Security ApiKeyAuth
+// @Tags Movies
+// @Accept json
+// @Produce json
+// @Param movie body Movie true "Movie to create"
+// @Success 201 {object} Movie "Movie created"
+// @Failure 400 "Bad request"
+// @Failure 500 "Internal server error"
+// @Router /movies [post]
 func (h *Handler) createMovie(w http.ResponseWriter, r *http.Request) {
 	var m Movie
 	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
@@ -60,6 +70,16 @@ func (h *Handler) createMovie(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(m)
 }
 
+// @Summary Update a movie
+// @Security ApiKeyAuth
+// @Tags Movies
+// @Accept json
+// @Produce json
+// @Param movie body Movie true "Movie with updated information"
+// @Success 200 {object} Movie "Movie updated"
+// @Failure 400 "Bad request"
+// @Failure 500 "Internal server error"
+// @Router /movies [put]
 func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
 	var m Movie
 	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
@@ -78,6 +98,13 @@ func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(m)
 }
 
+// @Summary Delete a movie
+// @Security ApiKeyAuth
+// @Tags Movies
+// @Success 200 "Movie deleted"
+// @Failure 400 "Bad request"
+// @Failure 500 "Internal server error"
+// @Router /movies [delete]
 func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
@@ -103,6 +130,13 @@ func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Movie with ID %s was deleted successfully", id)
 }
 
+// @Summary Get list of movies
+// @Security ApiKeyAuth
+// @Tags Movies
+// @Produce json
+// @Success 200 {array} Movie "List of movies"
+// @Failure 500 "Internal server error"
+// @Router /movies [get]
 func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 	query := "SELECT id, title, description, release_date, rating FROM movies"
 

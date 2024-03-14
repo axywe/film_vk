@@ -1,0 +1,263 @@
+basePath: /
+definitions:
+  actor.Actor:
+    properties:
+      birthdate:
+        type: string
+      gender:
+        type: string
+      id:
+        type: integer
+      movies:
+        items:
+          $ref: '#/definitions/actor.MovieBrief'
+        type: array
+      name:
+        type: string
+    type: object
+  actor.MovieBrief:
+    properties:
+      id:
+        type: integer
+      title:
+        type: string
+    type: object
+  auth.Credentials:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  movie.Movie:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      rating:
+        type: number
+      releaseDate:
+        type: string
+      title:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a server for Filmotheka application.
+  title: Filmotheka API
+  version: "1.0"
+paths:
+  /actors:
+    delete:
+      responses:
+        "200":
+          description: Actor deleted
+        "400":
+          description: Bad request
+        "500":
+          description: Internal server error
+      security:
+      - ApiKeyAuth: []
+      summary: Delete an actor
+      tags:
+      - Actors
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of actors
+          schema:
+            items:
+              $ref: '#/definitions/actor.Actor'
+            type: array
+        "500":
+          description: Internal server error
+      security:
+      - ApiKeyAuth: []
+      summary: Get list of actors
+      tags:
+      - Actors
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Actor to create
+        in: body
+        name: actor
+        required: true
+        schema:
+          $ref: '#/definitions/actor.Actor'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Actor created
+          schema:
+            $ref: '#/definitions/actor.Actor'
+        "400":
+          description: Bad request
+        "500":
+          description: Internal server error
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new actor
+      tags:
+      - Actors
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Actor with updated information
+        in: body
+        name: actor
+        required: true
+        schema:
+          $ref: '#/definitions/actor.Actor'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Actor updated
+          schema:
+            $ref: '#/definitions/actor.Actor'
+        "400":
+          description: Bad request
+        "500":
+          description: Internal server error
+      security:
+      - ApiKeyAuth: []
+      summary: Update an actor
+      tags:
+      - Actors
+  /auth:
+    post:
+      consumes:
+      - application/json
+      description: Processes POST user authentication requests and generates JWT tokens.
+      parameters:
+      - description: User credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/auth.Credentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful authentication
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input data
+          schema:
+            type: string
+        "401":
+          description: User not found or invalid credentials
+          schema:
+            type: string
+        "405":
+          description: Only the POST method is allowed
+          schema:
+            type: string
+        "500":
+          description: Server error
+          schema:
+            type: string
+      summary: Authentication Processing
+      tags:
+      - Auth
+  /movies:
+    delete:
+      responses:
+        "200":
+          description: Movie deleted
+        "400":
+          description: Bad request
+        "500":
+          description: Internal server error
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a movie
+      tags:
+      - Movies
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of movies
+          schema:
+            items:
+              $ref: '#/definitions/movie.Movie'
+            type: array
+        "500":
+          description: Internal server error
+      security:
+      - ApiKeyAuth: []
+      summary: Get list of movies
+      tags:
+      - Movies
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Movie to create
+        in: body
+        name: movie
+        required: true
+        schema:
+          $ref: '#/definitions/movie.Movie'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Movie created
+          schema:
+            $ref: '#/definitions/movie.Movie'
+        "400":
+          description: Bad request
+        "500":
+          description: Internal server error
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new movie
+      tags:
+      - Movies
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Movie with updated information
+        in: body
+        name: movie
+        required: true
+        schema:
+          $ref: '#/definitions/movie.Movie'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Movie updated
+          schema:
+            $ref: '#/definitions/movie.Movie'
+        "400":
+          description: Bad request
+        "500":
+          description: Internal server error
+      security:
+      - ApiKeyAuth: []
+      summary: Update a movie
+      tags:
+      - Movies
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
