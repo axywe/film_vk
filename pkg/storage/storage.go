@@ -15,7 +15,7 @@ func InitDB() (*sql.DB, error) {
 	if err := godotenv.Load(".env"); err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
-	time.Sleep(5 * time.Second)
+	time.Sleep(2 * time.Second)
 	host := os.Getenv("POSTGRES_HOST")
 	port := os.Getenv("POSTGRES_PORT")
 	user := os.Getenv("POSTGRES_USER")
@@ -28,7 +28,7 @@ func InitDB() (*sql.DB, error) {
 	for i := 0; i < 10; i++ {
 		db, err = sql.Open("postgres", connStr)
 		if err != nil {
-			fmt.Printf("Failed to connect to database. Retrying in 5 seconds... Attempt %d/%d\n", i+1, 10)
+			log.Printf("Failed to connect to database. Retrying in 5 seconds... Attempt %d/%d\n", i+1, 10)
 			time.Sleep(5 * time.Second)
 		} else {
 			break

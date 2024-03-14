@@ -39,8 +39,17 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "404": {
+                        "description": "No actors found",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
                     "500": {
-                        "description": "Internal server error"
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     }
                 }
             },
@@ -138,15 +147,39 @@ const docTemplate = `{
                     "Actors"
                 ],
                 "summary": "Delete an actor",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Account ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Actor deleted"
+                        "description": "Actor deleted",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
                     "400": {
-                        "description": "Bad request"
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Actor not found",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     },
                     "500": {
-                        "description": "Internal server error"
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -179,34 +212,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Successful authentication",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/auth.TokenResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid input data",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/util.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "User not found or invalid credentials",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/util.ErrorResponse"
                         }
                     },
                     "405": {
                         "description": "Only the POST method is allowed",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/util.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Server error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/util.ErrorResponse"
                         }
                     }
                 }
@@ -342,6 +372,12 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request"
                     },
+                    "404": {
+                        "description": "Movie not found",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error"
                     }
@@ -395,6 +431,14 @@ const docTemplate = `{
                 }
             }
         },
+        "auth.TokenResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "movie.Movie": {
             "type": "object",
             "properties": {
@@ -411,6 +455,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "util.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {
                     "type": "string"
                 }
             }

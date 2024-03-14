@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/axywe/filmotheka_vk/util"
 	"github.com/dgrijalva/jwt-go"
 )
 
@@ -12,7 +13,7 @@ func RoleCheckMiddleware(next http.Handler) http.Handler {
 		const BearerSchema = "Bearer "
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			http.Error(w, "No token provided", http.StatusUnauthorized)
+			util.SendJSONError(w, r, "No token provided", http.StatusUnauthorized)
 			return
 		}
 		tokenString := strings.TrimPrefix(authHeader, BearerSchema)
@@ -21,7 +22,7 @@ func RoleCheckMiddleware(next http.Handler) http.Handler {
 		})
 
 		if err != nil {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			util.SendJSONError(w, r, "Invalid token", http.StatusUnauthorized)
 			return
 		}
 
@@ -33,10 +34,10 @@ func RoleCheckMiddleware(next http.Handler) http.Handler {
 			} else if role == 2 && r.Method == http.MethodGet {
 				next.ServeHTTP(w, r)
 			} else {
-				http.Error(w, "Not authorized for this action", http.StatusUnauthorized)
+				util.SendJSONError(w, r, "Not authorized for this action", http.StatusUnauthorized)
 			}
 		} else {
-			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+			util.SendJSONError(w, r, "Invalid token claims", http.StatusUnauthorized)
 		}
 	})
 }

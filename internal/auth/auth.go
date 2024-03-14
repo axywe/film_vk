@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/axywe/filmotheka_vk/util"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Credentials represents the username and password provided by a user for authentication
 type Credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -26,28 +26,32 @@ func NewHandler(db *sql.DB) *Handler {
 	}
 }
 
+type TokenResponse struct {
+	Token string `json:"token"`
+}
+
 // @Summary Authentication Processing
 // @Description Processes POST user authentication requests and generates JWT tokens.
 // @Tags Auth
 // @Accept json
 // @Produce json
 // @Param credentials body Credentials true "User credentials"
-// @Success 200 {object} map[string]string "Successful authentication"
-// @Failure 400 {string} string "Invalid input data"
-// @Failure 401 {string} string "User not found or invalid credentials"
-// @Failure 405 {string} string "Only the POST method is allowed"
-// @Failure 500 {string} string "Server error"
+// @Success 200 {object} TokenResponse "Successful authentication"
+// @Failure 400 {object} util.ErrorResponse "Invalid input data"
+// @Failure 401 {object} util.ErrorResponse "User not found or invalid credentials"
+// @Failure 405 {object} util.ErrorResponse "Only the POST method is allowed"
+// @Failure 500 {object} util.ErrorResponse "Server error"
 // @Router /auth [post]
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
+		util.SendJSONError(w, r, "Only POST method is allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	var creds Credentials
 
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		util.SendJSONError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -59,15 +63,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.db.QueryRow("SELECT id, password, role FROM users WHERE username = $1", creds.Username).Scan(&user.ID, &user.Password, &user.Role); err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "User not found", http.StatusUnauthorized)
+			util.SendJSONError(w, r, "User not found", http.StatusUnauthorized)
 		} else {
-			http.Error(w, "Database error", http.StatusInternalServerError)
+			util.SendJSONError(w, r, "Database error", http.StatusInternalServerError)
 		}
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password)); err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		util.SendJSONError(w, r, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
@@ -79,12 +83,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	tokenString, err := token.SignedString([]byte("your_secret_key"))
 	if err != nil {
-		http.Error(w, "Error while signing the token", http.StatusInternalServerError)
+		util.SendJSONError(w, r, "Error while signing the token", http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"token": tokenString,
-	})
+	util.SendJSONResponse(w, r, TokenResponse{Token: tokenString}, http.StatusOK)
 }

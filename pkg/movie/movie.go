@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/axywe/filmotheka_vk/util"
 )
 
 type Movie struct {
@@ -36,7 +38,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		h.getMovies(w, r)
 	default:
-		http.Error(w, "Unsupported HTTP method", http.StatusMethodNotAllowed)
+		util.SendJSONError(w, r, "Unsupported HTTP method", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -53,21 +55,23 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) createMovie(w http.ResponseWriter, r *http.Request) {
 	var m Movie
 	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		util.SendJSONError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
-
+	if m.Rating < 0 || m.Rating > 10 {
+		util.SendJSONError(w, r, "Rating must be between 0 and 10", http.StatusBadRequest)
+		return
+	}
 	sqlStatement := `INSERT INTO movies (title, description, release_date, rating) VALUES ($1, $2, $3, $4) RETURNING id`
 	id := 0
 	err := h.db.QueryRow(sqlStatement, m.Title, m.Description, m.ReleaseDate, m.Rating).Scan(&id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	m.ID = id
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(m)
+	util.SendJSONResponse(w, r, m, http.StatusCreated)
 }
 
 // @Summary Update a movie
@@ -83,19 +87,18 @@ func (h *Handler) createMovie(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
 	var m Movie
 	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		util.SendJSONError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	sqlStatement := `UPDATE movies SET title = $2, description = $3, release_date = $4, rating = $5 WHERE id = $1;`
 	_, err := h.db.Exec(sqlStatement, m.ID, m.Title, m.Description, m.ReleaseDate, m.Rating)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(m)
+	util.SendJSONResponse(w, r, m, http.StatusOK)
 }
 
 // @Summary Delete a movie
@@ -103,31 +106,41 @@ func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
 // @Tags Movies
 // @Success 200 "Movie deleted"
 // @Failure 400 "Bad request"
+// @Failure 404 {object} util.ErrorResponse "Movie not found"
 // @Failure 500 "Internal server error"
 // @Router /movies [delete]
 func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		http.Error(w, "Movie ID is required", http.StatusBadRequest)
+		util.SendJSONError(w, r, "Movie ID is required", http.StatusBadRequest)
 		return
 	}
 
-	sqlStatement := `DELETE FROM actors_movie WHERE film_id = $1;`
+	sqlStatement := `DELETE FROM actor_movie WHERE film_id = $1;`
 	_, err := h.db.Exec(sqlStatement, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	sqlStatement = `DELETE FROM movies WHERE id = $1;`
-	_, err = h.db.Exec(sqlStatement, id)
+	result, err := h.db.Exec(sqlStatement, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Movie with ID %s was deleted successfully", id)
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if rowsAffected == 0 {
+		util.SendJSONError(w, r, "Movie not found", http.StatusNotFound)
+		return
+	}
+
+	util.SendJSONResponse(w, r, "Movie deleted", http.StatusOK)
 }
 
 // @Summary Get list of movies
@@ -160,7 +173,7 @@ func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 	log.Println(query)
 	rows, err := h.db.Query(query)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -169,16 +182,15 @@ func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var m Movie
 		if err := rows.Scan(&m.ID, &m.Title, &m.Description, &m.ReleaseDate, &m.Rating); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		movies = append(movies, m)
 	}
 	if err := rows.Err(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(movies)
+	util.SendJSONResponse(w, r, movies, http.StatusOK)
 }

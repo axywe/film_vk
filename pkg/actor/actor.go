@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/axywe/filmotheka_vk/util"
 )
 
 type Actor struct {
@@ -42,7 +44,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		h.getActors(w, r)
 	default:
-		http.Error(w, "Unsupported HTTP method", http.StatusMethodNotAllowed)
+		util.SendJSONError(w, r, "Unsupported HTTP method", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -59,7 +61,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) createActor(w http.ResponseWriter, r *http.Request) {
 	var a Actor
 	if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		util.SendJSONError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -67,7 +69,7 @@ func (h *Handler) createActor(w http.ResponseWriter, r *http.Request) {
 	id := 0
 	err := h.db.QueryRow(sqlStatement, a.Name, a.Gender, a.Birthdate).Scan(&id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -77,13 +79,12 @@ func (h *Handler) createActor(w http.ResponseWriter, r *http.Request) {
 		sqlStatement = `INSERT INTO actor_movie (actor_id, movie_id) VALUES ($1, $2)`
 		_, err := h.db.Exec(sqlStatement, a.ID, movie.ID)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(a)
+	util.SendJSONResponse(w, r, a, http.StatusCreated)
 }
 
 // @Summary Update an actor
@@ -99,7 +100,7 @@ func (h *Handler) createActor(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) updateActor(w http.ResponseWriter, r *http.Request) {
 	var a Actor
 	if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		util.SendJSONError(w, r, err.Error(), http.StatusBadRequest)
 		return
 	}
 	fields := []string{}
@@ -122,14 +123,14 @@ func (h *Handler) updateActor(w http.ResponseWriter, r *http.Request) {
 		sqlStatement := fmt.Sprintf("UPDATE actors SET %s WHERE id = $1;", strings.Join(fields, ", "))
 		_, err := h.db.Exec(sqlStatement, args...)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
 
 	existingMovies, err := h.getMoviesForActor(a.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -141,13 +142,13 @@ func (h *Handler) updateActor(w http.ResponseWriter, r *http.Request) {
 		if existingMovieMap[movie.ID] {
 			_, err := h.db.Exec("DELETE FROM actor_movie WHERE actor_id = $1 AND movie_id = $2", a.ID, movie.ID)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		} else {
 			_, err := h.db.Exec("INSERT INTO actor_movie (actor_id, movie_id) VALUES ($1, $2)", a.ID, movie.ID)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -157,45 +158,55 @@ func (h *Handler) updateActor(w http.ResponseWriter, r *http.Request) {
 	for remainingMovieID := range existingMovieMap {
 		_, err := h.db.Exec("DELETE FROM actor_movie WHERE actor_id = $1 AND movie_id = $2", a.ID, remainingMovieID)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(a)
+	util.SendJSONResponse(w, r, a, http.StatusOK)
 }
 
 // @Summary Delete an actor
 // @Security ApiKeyAuth
 // @Tags Actors
-// @Success 200 "Actor deleted"
-// @Failure 400 "Bad request"
-// @Failure 500 "Internal server error"
+// @Param id query int true "Account ID"
+// @Success 200 {string} string "Actor deleted"
+// @Failure 400 {object} util.ErrorResponse "Bad request"
+// @Failure 404 {object} util.ErrorResponse "Actor not found"
+// @Failure 500 {object} util.ErrorResponse "Internal server error"
 // @Router /actors [delete]
 func (h *Handler) deleteActor(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		http.Error(w, "Actor ID is required", http.StatusBadRequest)
+		util.SendJSONError(w, r, "Actor ID is required", http.StatusBadRequest)
 		return
 	}
 
-	sqlStatement := `DELETE FROM actors_movie WHERE actor_id = $1;`
+	sqlStatement := `DELETE FROM actor_movie WHERE actor_id = $1;`
 	_, err := h.db.Exec(sqlStatement, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	sqlStatement = `DELETE FROM actors WHERE id = $1;`
-	_, err = h.db.Exec(sqlStatement, id)
+	result, err := h.db.Exec(sqlStatement, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Actor with ID %s was deleted successfully", id)
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if rowsAffected == 0 {
+		util.SendJSONError(w, r, "Actor not found", http.StatusNotFound)
+		return
+	}
+
+	util.SendJSONResponse(w, r, "Actor deleted", http.StatusOK)
 }
 
 // @Summary Get list of actors
@@ -203,14 +214,15 @@ func (h *Handler) deleteActor(w http.ResponseWriter, r *http.Request) {
 // @Tags Actors
 // @Produce json
 // @Success 200 {array} Actor "List of actors"
-// @Failure 500 "Internal server error"
+// @Failure 404 {object} util.ErrorResponse "No actors found"
+// @Failure 500 {object} util.ErrorResponse "Internal server error"
 // @Router /actors [get]
-func (h *Handler) getActors(w http.ResponseWriter, _ *http.Request) {
+func (h *Handler) getActors(w http.ResponseWriter, r *http.Request) {
 	var actors []Actor
 
 	rows, err := h.db.Query("SELECT id, name, gender, birthdate FROM actors")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -219,7 +231,7 @@ func (h *Handler) getActors(w http.ResponseWriter, _ *http.Request) {
 		var a Actor
 		err := rows.Scan(&a.ID, &a.Name, &a.Gender, &a.Birthdate)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		actors = append(actors, a)
@@ -233,9 +245,12 @@ func (h *Handler) getActors(w http.ResponseWriter, _ *http.Request) {
 		}
 		actors[i].Movies = actorMovies
 	}
+	if actors == nil {
+		util.SendJSONError(w, r, "No actors found", http.StatusNotFound)
+		return
+	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(actors)
+	util.SendJSONResponse(w, r, actors, http.StatusOK)
 }
 
 func (h *Handler) getMoviesForActor(actorID int) ([]MovieBrief, error) {
