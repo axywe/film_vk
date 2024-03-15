@@ -56,7 +56,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // @Param actor body Actor true "Actor to create"
 // @Success 201 {object} Actor "Actor created"
 // @Failure 400 "Bad request"
-// @Failure 500 "Internal server error"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 403 {object} util.ErrorResponse "Not authorized for this action"
+// @Failure 500 {object} util.ErrorResponse "Internal server error"
 // @Router /actors [post]
 func (h *Handler) createActor(w http.ResponseWriter, r *http.Request) {
 	var a Actor
@@ -94,8 +96,10 @@ func (h *Handler) createActor(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param actor body Actor true "Actor with updated information"
 // @Success 200 {object} Actor "Actor updated"
-// @Failure 400 "Bad request"
-// @Failure 500 "Internal server error"
+// @Failure 400 {object} util.ErrorResponse "Bad request"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 403 {object} util.ErrorResponse "Not authorized for this action"
+// @Failure 500 {object} util.ErrorResponse "Internal server error"
 // @Router /actors [put]
 func (h *Handler) updateActor(w http.ResponseWriter, r *http.Request) {
 	var a Actor
@@ -172,6 +176,8 @@ func (h *Handler) updateActor(w http.ResponseWriter, r *http.Request) {
 // @Param id query int true "Account ID"
 // @Success 200 {string} string "Actor deleted"
 // @Failure 400 {object} util.ErrorResponse "Bad request"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 403 {object} util.ErrorResponse "Not authorized for this action"
 // @Failure 404 {object} util.ErrorResponse "Actor not found"
 // @Failure 500 {object} util.ErrorResponse "Internal server error"
 // @Router /actors [delete]
@@ -214,6 +220,7 @@ func (h *Handler) deleteActor(w http.ResponseWriter, r *http.Request) {
 // @Tags Actors
 // @Produce json
 // @Success 200 {array} Actor "List of actors"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
 // @Failure 404 {object} util.ErrorResponse "No actors found"
 // @Failure 500 {object} util.ErrorResponse "Internal server error"
 // @Router /actors [get]

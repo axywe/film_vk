@@ -33,6 +33,12 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Not authorized",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "No actors found",
                         "schema": {
@@ -82,10 +88,28 @@
                         }
                     },
                     "400": {
-                        "description": "Bad request"
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized for this action",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     },
                     "500": {
-                        "description": "Internal server error"
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     }
                 }
             },
@@ -126,8 +150,23 @@
                     "400": {
                         "description": "Bad request"
                     },
+                    "401": {
+                        "description": "Not authorized",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized for this action",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
                     "500": {
-                        "description": "Internal server error"
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     }
                 }
             },
@@ -159,6 +198,18 @@
                     },
                     "400": {
                         "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized for this action",
                         "schema": {
                             "$ref": "#/definitions/util.ErrorResponse"
                         }
@@ -260,6 +311,18 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Not authorized",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "No actors found",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error"
                     }
@@ -301,6 +364,18 @@
                     },
                     "400": {
                         "description": "Bad request"
+                    },
+                    "401": {
+                        "description": "Not authorized",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized for this action",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal server error"
@@ -344,6 +419,18 @@
                     "400": {
                         "description": "Bad request"
                     },
+                    "401": {
+                        "description": "Not authorized",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized for this action",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error"
                     }
@@ -359,12 +446,33 @@
                     "Movies"
                 ],
                 "summary": "Delete a movie",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Movie ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Movie deleted"
                     },
                     "400": {
                         "description": "Bad request"
+                    },
+                    "401": {
+                        "description": "Not authorized",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Not authorized for this action",
+                        "schema": {
+                            "$ref": "#/definitions/util.ErrorResponse"
+                        }
                     },
                     "404": {
                         "description": "Movie not found",

@@ -25,6 +25,7 @@ require (
 )
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/swaggo/http-swagger v1.3.4
 	golang.org/x/net v0.22.0 // indirect
 )

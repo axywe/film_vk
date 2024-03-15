@@ -78,6 +78,14 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/util.ErrorResponse'
+        "401":
+          description: Not authorized
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "403":
+          description: Not authorized for this action
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "404":
           description: Actor not found
           schema:
@@ -101,6 +109,10 @@ paths:
             items:
               $ref: '#/definitions/actor.Actor'
             type: array
+        "401":
+          description: Not authorized
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "404":
           description: No actors found
           schema:
@@ -133,8 +145,18 @@ paths:
             $ref: '#/definitions/actor.Actor'
         "400":
           description: Bad request
+        "401":
+          description: Not authorized
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "403":
+          description: Not authorized for this action
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "500":
           description: Internal server error
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Create a new actor
@@ -159,8 +181,20 @@ paths:
             $ref: '#/definitions/actor.Actor'
         "400":
           description: Bad request
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "401":
+          description: Not authorized
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "403":
+          description: Not authorized for this action
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "500":
           description: Internal server error
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Update an actor
@@ -206,11 +240,25 @@ paths:
       - Auth
   /movies:
     delete:
+      parameters:
+      - description: Movie ID
+        in: query
+        name: id
+        required: true
+        type: integer
       responses:
         "200":
           description: Movie deleted
         "400":
           description: Bad request
+        "401":
+          description: Not authorized
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "403":
+          description: Not authorized for this action
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "404":
           description: Movie not found
           schema:
@@ -232,6 +280,14 @@ paths:
             items:
               $ref: '#/definitions/movie.Movie'
             type: array
+        "401":
+          description: Not authorized
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "404":
+          description: No actors found
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "500":
           description: Internal server error
       security:
@@ -258,6 +314,14 @@ paths:
             $ref: '#/definitions/movie.Movie'
         "400":
           description: Bad request
+        "401":
+          description: Not authorized
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "403":
+          description: Not authorized for this action
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "500":
           description: Internal server error
       security:
@@ -284,6 +348,14 @@ paths:
             $ref: '#/definitions/movie.Movie'
         "400":
           description: Bad request
+        "401":
+          description: Not authorized
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
+        "403":
+          description: Not authorized for this action
+          schema:
+            $ref: '#/definitions/util.ErrorResponse'
         "500":
           description: Internal server error
       security:

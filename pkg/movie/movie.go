@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/axywe/filmotheka_vk/util"
@@ -50,12 +52,25 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // @Param movie body Movie true "Movie to create"
 // @Success 201 {object} Movie "Movie created"
 // @Failure 400 "Bad request"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 403 {object} util.ErrorResponse "Not authorized for this action"
 // @Failure 500 "Internal server error"
 // @Router /movies [post]
 func (h *Handler) createMovie(w http.ResponseWriter, r *http.Request) {
 	var m Movie
 	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
 		util.SendJSONError(w, r, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if m.Title == "" {
+		util.SendJSONError(w, r, "Title is required", http.StatusBadRequest)
+		return
+	} else if len([]rune(m.Title)) > 150 {
+		util.SendJSONError(w, r, "Title must be less than 255 characters", http.StatusBadRequest)
+		return
+	}
+	if len([]rune(m.Description)) > 1000 {
+		util.SendJSONError(w, r, "Description must be less than 1000 characters", http.StatusBadRequest)
 		return
 	}
 	if m.Rating < 0 || m.Rating > 10 {
@@ -82,6 +97,8 @@ func (h *Handler) createMovie(w http.ResponseWriter, r *http.Request) {
 // @Param movie body Movie true "Movie with updated information"
 // @Success 200 {object} Movie "Movie updated"
 // @Failure 400 "Bad request"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 403 {object} util.ErrorResponse "Not authorized for this action"
 // @Failure 500 "Internal server error"
 // @Router /movies [put]
 func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
@@ -91,8 +108,37 @@ func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlStatement := `UPDATE movies SET title = $2, description = $3, release_date = $4, rating = $5 WHERE id = $1;`
-	_, err := h.db.Exec(sqlStatement, m.ID, m.Title, m.Description, m.ReleaseDate, m.Rating)
+	sqlStatement := "UPDATE movies SET"
+	params := []interface{}{}
+	index := 2
+
+	if m.Title != "" {
+		sqlStatement += " title = $" + strconv.Itoa(index) + ","
+		params = append(params, m.Title)
+		index++
+	}
+	if m.Description != "" {
+		sqlStatement += " description = $" + strconv.Itoa(index) + ","
+		params = append(params, m.Description)
+		index++
+	}
+	if !m.ReleaseDate.IsZero() {
+		sqlStatement += " release_date = $" + strconv.Itoa(index) + ","
+		params = append(params, m.ReleaseDate)
+		index++
+	}
+	if m.Rating != 0 {
+		sqlStatement += " rating = $" + strconv.Itoa(index) + ","
+		params = append(params, m.Rating)
+	}
+
+	sqlStatement = strings.TrimSuffix(sqlStatement, ",")
+
+	sqlStatement += " WHERE id = $1;"
+
+	params = append([]interface{}{m.ID}, params...)
+
+	_, err := h.db.Exec(sqlStatement, params...)
 	if err != nil {
 		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 		return
@@ -104,8 +150,11 @@ func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
 // @Summary Delete a movie
 // @Security ApiKeyAuth
 // @Tags Movies
+// @Param id query int true "Movie ID"
 // @Success 200 "Movie deleted"
 // @Failure 400 "Bad request"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 403 {object} util.ErrorResponse "Not authorized for this action"
 // @Failure 404 {object} util.ErrorResponse "Movie not found"
 // @Failure 500 "Internal server error"
 // @Router /movies [delete]
@@ -116,7 +165,7 @@ func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlStatement := `DELETE FROM actor_movie WHERE film_id = $1;`
+	sqlStatement := `DELETE FROM actor_movie WHERE movie_id = $1;`
 	_, err := h.db.Exec(sqlStatement, id)
 	if err != nil {
 		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
@@ -148,6 +197,8 @@ func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 // @Tags Movies
 // @Produce json
 // @Success 200 {array} Movie "List of movies"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 404 {object} util.ErrorResponse "No actors found"
 // @Failure 500 "Internal server error"
 // @Router /movies [get]
 func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
@@ -191,6 +242,9 @@ func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 		util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	if len(movies) == 0 {
+		util.SendJSONError(w, r, "No movies found", http.StatusNotFound)
+		return
+	}
 	util.SendJSONResponse(w, r, movies, http.StatusOK)
 }

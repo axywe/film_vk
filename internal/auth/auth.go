@@ -17,17 +17,34 @@ type Credentials struct {
 }
 
 type Handler struct {
-	db *sql.DB
+	db             *sql.DB
+	tokenGenerator TokenGenerator
 }
 
-func NewHandler(db *sql.DB) *Handler {
+func NewHandler(db *sql.DB, tokenGen TokenGenerator) *Handler {
 	return &Handler{
-		db: db,
+		db:             db,
+		tokenGenerator: tokenGen,
 	}
 }
 
 type TokenResponse struct {
 	Token string `json:"token"`
+}
+
+type TokenGenerator interface {
+	GenerateToken(userID int, role int) (string, error)
+}
+
+type JWTTokenGenerator struct{}
+
+func (j *JWTTokenGenerator) GenerateToken(userID int, role int) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userID": userID,
+		"role":   role,
+		"exp":    time.Now().Add(time.Hour * 72).Unix(),
+	})
+	return token.SignedString([]byte("your_secret_key"))
 }
 
 // @Summary Authentication Processing
@@ -49,7 +66,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var creds Credentials
-
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
 		util.SendJSONError(w, r, err.Error(), http.StatusBadRequest)
 		return
@@ -60,7 +76,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 		Role     int    `json:"role"`
 	}
-
 	if err := h.db.QueryRow("SELECT id, password, role FROM users WHERE username = $1", creds.Username).Scan(&user.ID, &user.Password, &user.Role); err != nil {
 		if err == sql.ErrNoRows {
 			util.SendJSONError(w, r, "User not found", http.StatusUnauthorized)
@@ -75,13 +90,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID": user.ID,
-		"role":   user.Role,
-		"exp":    time.Now().Add(time.Hour * 72).Unix(),
-	})
-
-	tokenString, err := token.SignedString([]byte("your_secret_key"))
+	tokenString, err := h.tokenGenerator.GenerateToken(user.ID, user.Role)
 	if err != nil {
 		util.SendJSONError(w, r, "Error while signing the token", http.StatusInternalServerError)
 		return

@@ -34,7 +34,7 @@ func RoleCheckMiddleware(next http.Handler) http.Handler {
 			} else if role == 2 && r.Method == http.MethodGet {
 				next.ServeHTTP(w, r)
 			} else {
-				util.SendJSONError(w, r, "Not authorized for this action", http.StatusUnauthorized)
+				util.SendJSONError(w, r, "Not authorized for this action", http.StatusForbidden)
 			}
 		} else {
 			util.SendJSONError(w, r, "Invalid token claims", http.StatusUnauthorized)

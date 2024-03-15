@@ -32,7 +32,8 @@ func main() {
 
 	actorHandler := actor.NewHandler(db)
 	movieHandler := movie.NewHandler(db)
-	authHandler := auth.NewHandler(db)
+	tokenGenerator := &auth.JWTTokenGenerator{}
+	authHandler := auth.NewHandler(db, tokenGenerator)
 
 	http.Handle("/swagger/", httpSwagger.WrapHandler)
 	http.Handle("/actors", middleware.RoleCheckMiddleware(actorHandler))
@@ -43,4 +44,3 @@ func main() {
 	log.Println("Starting server on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
-

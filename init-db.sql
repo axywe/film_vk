@@ -30,5 +30,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 
 -- Test data
-INSERT INTO users (username, password, role) VALUES ('admin', '$2a$10$NjIPpHePTDy5hJs/JmX90uWxWT5jOqrw0OyrBg88lmiQvlHQHbAXu', 1);
+-- Login: admin, Password: admin
+INSERT INTO users (username, password, role) VALUES ('admin', '$2a$10$NjIPpHePTDy5hJs/JmX90uWxWT5jOqrw0OyrBg88lmiQvlHQHbAXu', 1); 
+-- Login: user, Password: user
 INSERT INTO users (username, password, role) VALUES ('user', '$2a$10$ajvqHTuI3ixFdkI2WUJrF.KPPp2etsdgtj/jccMH0yek7W8JZK3P6', 2);
