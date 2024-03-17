@@ -60,7 +60,7 @@
 
 ## Installation and launch
 
-Create a file.env in the root of the project and specify the environment variables in it:
+Create a file `.env` in the root of the project and specify the environment variables in it:
 ```
 POSTGRES_USER=filmotheka_user
 POSTGRES_PASSWORD=filmotheka_pass

@@ -16,7 +16,7 @@ import (
 // @title Filmotheka API
 // @description This is a server for Filmotheka application.
 // @version 1.0
-// @host localhost:8080
+// @host 0.0.0.0:8080
 // @BasePath /
 
 // @securityDefinitions.apiKey ApiKeyAuth
