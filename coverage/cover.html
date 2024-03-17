@@ -1,0 +1,801 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>auth: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/axywe/filmotheka_vk/internal/auth/auth.go (100.0%)</option>
+				
+				<option value="file1">github.com/axywe/filmotheka_vk/internal/middleware/middleware.go (100.0%)</option>
+				
+				<option value="file2">github.com/axywe/filmotheka_vk/pkg/actor/actor.go (71.4%)</option>
+				
+				<option value="file3">github.com/axywe/filmotheka_vk/pkg/movie/movie.go (70.4%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package auth
+
+import (
+        "database/sql"
+        "encoding/json"
+        "net/http"
+        "time"
+
+        "github.com/axywe/filmotheka_vk/util"
+        "github.com/dgrijalva/jwt-go"
+        "golang.org/x/crypto/bcrypt"
+)
+
+type Credentials struct {
+        Username string `json:"username"`
+        Password string `json:"password"`
+}
+
+type Handler struct {
+        db             *sql.DB
+        tokenGenerator TokenGenerator
+}
+
+func NewHandler(db *sql.DB, tokenGen TokenGenerator) *Handler <span class="cov8" title="1">{
+        return &amp;Handler{
+                db:             db,
+                tokenGenerator: tokenGen,
+        }
+}</span>
+
+type TokenResponse struct {
+        Token string `json:"token"`
+}
+
+type TokenGenerator interface {
+        GenerateToken(userID int, role int) (string, error)
+}
+
+type JWTTokenGenerator struct{}
+
+func (j *JWTTokenGenerator) GenerateToken(userID int, role int) (string, error) <span class="cov8" title="1">{
+        token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+                "userID": userID,
+                "role":   role,
+                "exp":    time.Now().Add(time.Hour * 72).Unix(),
+        })
+        return token.SignedString([]byte("your_secret_key"))
+}</span>
+
+// @Summary Authentication Processing
+// @Description Processes POST user authentication requests and generates JWT tokens.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param credentials body Credentials true "User credentials"
+// @Success 200 {object} TokenResponse "Successful authentication"
+// @Failure 400 {object} util.ErrorResponse "Invalid input data"
+// @Failure 401 {object} util.ErrorResponse "User not found or invalid credentials"
+// @Failure 405 {object} util.ErrorResponse "Only the POST method is allowed"
+// @Failure 500 {object} util.ErrorResponse "Server error"
+// @Router /auth [post]
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        if r.Method != http.MethodPost </span><span class="cov8" title="1">{
+                util.SendJSONError(w, r, "Only POST method is allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var creds Credentials
+        if err := json.NewDecoder(r.Body).Decode(&amp;creds); err != nil </span><span class="cov8" title="1">{
+                util.SendJSONError(w, r, err.Error(), http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var user struct {
+                ID       int    `json:"id"`
+                Password string `json:"password"`
+                Role     int    `json:"role"`
+        }
+        if err := h.db.QueryRow("SELECT id, password, role FROM users WHERE username = $1", creds.Username).Scan(&amp;user.ID, &amp;user.Password, &amp;user.Role); err != nil </span><span class="cov8" title="1">{
+                if err == sql.ErrNoRows </span><span class="cov8" title="1">{
+                        util.SendJSONError(w, r, "User not found", http.StatusUnauthorized)
+                }</span> else<span class="cov8" title="1"> {
+                        util.SendJSONError(w, r, "Database error", http.StatusInternalServerError)
+                }</span>
+                <span class="cov8" title="1">return</span>
+        }
+
+        <span class="cov8" title="1">if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password)); err != nil </span><span class="cov8" title="1">{
+                util.SendJSONError(w, r, "Invalid credentials", http.StatusUnauthorized)
+                return
+        }</span>
+
+        <span class="cov8" title="1">tokenString, err := h.tokenGenerator.GenerateToken(user.ID, user.Role)
+        if err != nil </span><span class="cov8" title="1">{
+                util.SendJSONError(w, r, "Error while signing the token", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">util.SendJSONResponse(w, r, TokenResponse{Token: tokenString}, http.StatusOK)</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package middleware
+
+import (
+        "net/http"
+        "strings"
+
+        "github.com/axywe/filmotheka_vk/util"
+        "github.com/dgrijalva/jwt-go"
+)
+
+func RoleCheckMiddleware(next http.Handler) http.Handler <span class="cov8" title="1">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                const BearerSchema = "Bearer "
+                authHeader := r.Header.Get("Authorization")
+                if authHeader == "" </span><span class="cov8" title="1">{
+                        util.SendJSONError(w, r, "No token provided", http.StatusUnauthorized)
+                        return
+                }</span>
+                <span class="cov8" title="1">tokenString := strings.TrimPrefix(authHeader, BearerSchema)
+                token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) </span><span class="cov8" title="1">{
+                        return []byte("your_secret_key"), nil
+                }</span>)
+
+                <span class="cov8" title="1">if err != nil </span><span class="cov8" title="1">{
+                        util.SendJSONError(w, r, "Invalid token", http.StatusUnauthorized)
+                        return
+                }</span>
+                <span class="cov8" title="1">if claims, ok := token.Claims.(jwt.MapClaims); ok &amp;&amp; token.Valid </span><span class="cov8" title="1">{
+                        if role, ok := claims["role"].(float64); ok </span><span class="cov8" title="1">{
+                                if role == 1 </span><span class="cov8" title="1">{
+                                        next.ServeHTTP(w, r)
+                                }</span> else<span class="cov8" title="1"> if role == 2 &amp;&amp; r.Method == http.MethodGet </span><span class="cov8" title="1">{
+                                        next.ServeHTTP(w, r)
+                                }</span> else<span class="cov8" title="1"> {
+                                        util.SendJSONError(w, r, "Not authorized for this action", http.StatusForbidden)
+                                }</span>
+                        } else<span class="cov8" title="1"> {
+                                util.SendJSONError(w, r, "Invalid token claims: role missing or invalid", http.StatusUnauthorized)
+                        }</span>
+                }
+
+        })
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package actor
+
+import (
+        "database/sql"
+        "encoding/json"
+        "fmt"
+        "log"
+        "net/http"
+        "strings"
+        "time"
+
+        "github.com/axywe/filmotheka_vk/util"
+        "github.com/lib/pq"
+)
+
+type Actor struct {
+        ID        int          `json:"id,omitempty"`
+        Name      string       `json:"name"`
+        Gender    string       `json:"gender"`
+        Birthdate time.Time    `json:"birthdate"`
+        Movies    []MovieBrief `json:"movies,omitempty"`
+}
+
+type MovieBrief struct {
+        ID    int    `json:"id"`
+        Title string `json:"title"`
+}
+
+type Handler struct {
+        db *sql.DB
+}
+
+func NewHandler(db *sql.DB) *Handler <span class="cov8" title="1">{
+        return &amp;Handler{db: db}
+}</span>
+
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        switch r.Method </span>{
+        case http.MethodPost:<span class="cov8" title="1">
+                h.createActor(w, r)</span>
+        case http.MethodPut:<span class="cov8" title="1">
+                h.updateActor(w, r)</span>
+        case http.MethodDelete:<span class="cov8" title="1">
+                h.deleteActor(w, r)</span>
+        case http.MethodGet:<span class="cov8" title="1">
+                h.getActors(w, r)</span>
+        default:<span class="cov8" title="1">
+                util.SendJSONError(w, r, "Unsupported HTTP method", http.StatusMethodNotAllowed)</span>
+        }
+}
+
+// @Summary Create a new actor
+// @Security ApiKeyAuth
+// @Tags Actors
+// @Accept json
+// @Produce json
+// @Param actor body Actor true "Actor to create"
+// @Success 201 {object} Actor "Actor created"
+// @Failure 400 "Bad request"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 403 {object} util.ErrorResponse "Not authorized for this action"
+// @Failure 500 {object} util.ErrorResponse "Internal server error"
+// @Router /actors [post]
+func (h *Handler) createActor(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        var a Actor
+        if err := json.NewDecoder(r.Body).Decode(&amp;a); err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sqlStatement := `INSERT INTO actors (name, gender, birthdate) VALUES ($1, $2, $3) RETURNING id`
+        id := 0
+        err := h.db.QueryRow(sqlStatement, a.Name, a.Gender, a.Birthdate).Scan(&amp;id)
+        if err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">a.ID = id
+
+        for _, movie := range a.Movies </span><span class="cov8" title="1">{
+                sqlStatement := `INSERT INTO actor_movie (actor_id, movie_id) VALUES ($1, $2)`
+                _, err := h.db.Exec(sqlStatement, a.ID, movie.ID)
+                if err != nil </span><span class="cov8" title="1">{
+                        if pqErr, ok := err.(*pq.Error); ok </span><span class="cov8" title="1">{ // Проверяем, является ли ошибка ошибкой PostgreSQL
+                                switch pqErr.Code </span>{
+                                case "23503":<span class="cov8" title="1">
+                                        util.SendJSONError(w, r, "Foreign key constraint violation", http.StatusBadRequest)
+                                        return</span>
+                                default:<span class="cov0" title="0">
+                                        util.SendJSONError(w, r, "Internal server error", http.StatusInternalServerError)
+                                        return</span>
+                                }
+                        }
+                        <span class="cov0" title="0">util.SendJSONError(w, r, "Internal server error", http.StatusInternalServerError)
+                        return</span>
+                }
+        }
+
+        <span class="cov8" title="1">util.SendJSONResponse(w, r, a, http.StatusCreated)</span>
+}
+
+// @Summary Update an actor
+// @Security ApiKeyAuth
+// @Tags Actors
+// @Accept json
+// @Produce json
+// @Param actor body Actor true "Actor with updated information"
+// @Success 200 {object} Actor "Actor updated"
+// @Failure 400 {object} util.ErrorResponse "Bad request"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 403 {object} util.ErrorResponse "Not authorized for this action"
+// @Failure 500 {object} util.ErrorResponse "Internal server error"
+// @Router /actors [put]
+func (h *Handler) updateActor(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        var a Actor
+        if err := json.NewDecoder(r.Body).Decode(&amp;a); err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov8" title="1">fields := []string{}
+        args := []interface{}{a.ID}
+
+        if a.Name != "" </span><span class="cov8" title="1">{
+                fields = append(fields, fmt.Sprintf("name = $%d", len(args)+1))
+                args = append(args, a.Name)
+        }</span>
+        <span class="cov8" title="1">if a.Gender != "" </span><span class="cov8" title="1">{
+                fields = append(fields, fmt.Sprintf("gender = $%d", len(args)+1))
+                args = append(args, a.Gender)
+        }</span>
+        <span class="cov8" title="1">if !a.Birthdate.IsZero() </span><span class="cov8" title="1">{
+                fields = append(fields, fmt.Sprintf("birthdate = $%d", len(args)+1))
+                args = append(args, a.Birthdate)
+        }</span>
+
+        <span class="cov8" title="1">if len(fields) &gt; 0 </span><span class="cov8" title="1">{
+                sqlStatement := fmt.Sprintf("UPDATE actors SET %s WHERE id = $1;", strings.Join(fields, ", "))
+                _, err := h.db.Exec(sqlStatement, args...)
+                if err != nil </span><span class="cov0" title="0">{
+                        util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                        return
+                }</span>
+        }
+
+        <span class="cov8" title="1">existingMovies, err := h.getMoviesForActor(a.ID)
+        if err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">existingMovieMap := make(map[int]bool)
+        for _, m := range existingMovies </span><span class="cov8" title="1">{
+                existingMovieMap[m.ID] = true
+        }</span>
+        <span class="cov8" title="1">for _, movie := range a.Movies </span><span class="cov8" title="1">{
+                if existingMovieMap[movie.ID] </span><span class="cov8" title="1">{
+                        _, err := h.db.Exec("DELETE FROM actor_movie WHERE actor_id = $1 AND movie_id = $2", a.ID, movie.ID)
+                        if err != nil </span><span class="cov0" title="0">{
+                                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                                return
+                        }</span>
+                } else<span class="cov8" title="1"> {
+                        _, err := h.db.Exec("INSERT INTO actor_movie (actor_id, movie_id) VALUES ($1, $2)", a.ID, movie.ID)
+                        if err != nil </span><span class="cov0" title="0">{
+                                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                                return
+                        }</span>
+                }
+                <span class="cov8" title="1">delete(existingMovieMap, movie.ID)</span>
+        }
+
+        <span class="cov8" title="1">for remainingMovieID := range existingMovieMap </span><span class="cov8" title="1">{
+                _, err := h.db.Exec("DELETE FROM actor_movie WHERE actor_id = $1 AND movie_id = $2", a.ID, remainingMovieID)
+                if err != nil </span><span class="cov0" title="0">{
+                        util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                        return
+                }</span>
+        }
+
+        <span class="cov8" title="1">util.SendJSONResponse(w, r, a, http.StatusOK)</span>
+}
+
+// @Summary Delete an actor
+// @Security ApiKeyAuth
+// @Tags Actors
+// @Param id query int true "Account ID"
+// @Success 200 {string} string "Actor deleted"
+// @Failure 400 {object} util.ErrorResponse "Bad request"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 403 {object} util.ErrorResponse "Not authorized for this action"
+// @Failure 404 {object} util.ErrorResponse "Actor not found"
+// @Failure 500 {object} util.ErrorResponse "Internal server error"
+// @Router /actors [delete]
+func (h *Handler) deleteActor(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        id := r.URL.Query().Get("id")
+        if id == "" </span><span class="cov8" title="1">{
+                util.SendJSONError(w, r, "Actor ID is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sqlStatement := `DELETE FROM actor_movie WHERE actor_id = $1;`
+        _, err := h.db.Exec(sqlStatement, id)
+        if err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sqlStatement = `DELETE FROM actors WHERE id = $1;`
+        result, err := h.db.Exec(sqlStatement, id)
+        if err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">rowsAffected, err := result.RowsAffected()
+        if err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov8" title="1">if rowsAffected == 0 </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, "Actor not found", http.StatusNotFound)
+                return
+        }</span>
+
+        <span class="cov8" title="1">util.SendJSONResponse(w, r, "Actor deleted", http.StatusOK)</span>
+}
+
+// @Summary Get list of actors
+// @Security ApiKeyAuth
+// @Tags Actors
+// @Produce json
+// @Success 200 {array} Actor "List of actors"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 404 {object} util.ErrorResponse "No actors found"
+// @Failure 500 {object} util.ErrorResponse "Internal server error"
+// @Router /actors [get]
+func (h *Handler) getActors(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        var actors []Actor
+
+        rows, err := h.db.Query("SELECT id, name, gender, birthdate FROM actors")
+        if err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov8" title="1">defer rows.Close()
+
+        for rows.Next() </span><span class="cov8" title="1">{
+                var a Actor
+                err := rows.Scan(&amp;a.ID, &amp;a.Name, &amp;a.Gender, &amp;a.Birthdate)
+                if err != nil </span><span class="cov0" title="0">{
+                        util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                        return
+                }</span>
+                <span class="cov8" title="1">actors = append(actors, a)</span>
+        }
+
+        <span class="cov8" title="1">for i, actor := range actors </span><span class="cov8" title="1">{
+                actorMovies, err := h.getMoviesForActor(actor.ID)
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Println("Error fetching movies for actor:", err)
+                        continue</span>
+                }
+                <span class="cov8" title="1">actors[i].Movies = actorMovies</span>
+        }
+        <span class="cov8" title="1">if actors == nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, "No actors found", http.StatusNotFound)
+                return
+        }</span>
+
+        <span class="cov8" title="1">util.SendJSONResponse(w, r, actors, http.StatusOK)</span>
+}
+
+func (h *Handler) getMoviesForActor(actorID int) ([]MovieBrief, error) <span class="cov8" title="1">{
+        var movies []MovieBrief
+
+        sqlStatement := `SELECT m.id, m.title FROM movies m JOIN actor_movie am ON am.movie_id = m.id WHERE am.actor_id = $1;`
+        rows, err := h.db.Query(sqlStatement, actorID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">defer rows.Close()
+
+        for rows.Next() </span><span class="cov8" title="1">{
+                var m MovieBrief
+                if err := rows.Scan(&amp;m.ID, &amp;m.Title); err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+                <span class="cov8" title="1">movies = append(movies, m)</span>
+        }
+
+        <span class="cov8" title="1">return movies, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package movie
+
+import (
+        "database/sql"
+        "encoding/json"
+        "fmt"
+        "log"
+        "net/http"
+        "strconv"
+        "strings"
+        "time"
+
+        "github.com/axywe/filmotheka_vk/util"
+)
+
+type Movie struct {
+        ID          int       `json:"id,omitempty"`
+        Title       string    `json:"title"`
+        Description string    `json:"description"`
+        ReleaseDate time.Time `json:"releaseDate"`
+        Rating      float64   `json:"rating"`
+}
+
+type Handler struct {
+        db *sql.DB
+}
+
+func NewHandler(db *sql.DB) *Handler <span class="cov8" title="1">{
+        return &amp;Handler{db: db}
+}</span>
+
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        switch r.Method </span>{
+        case http.MethodPost:<span class="cov8" title="1">
+                h.createMovie(w, r)</span>
+        case http.MethodPut:<span class="cov8" title="1">
+                h.updateMovie(w, r)</span>
+        case http.MethodDelete:<span class="cov8" title="1">
+                h.deleteMovie(w, r)</span>
+        case http.MethodGet:<span class="cov8" title="1">
+                h.getMovies(w, r)</span>
+        default:<span class="cov0" title="0">
+                util.SendJSONError(w, r, "Unsupported HTTP method", http.StatusMethodNotAllowed)</span>
+        }
+}
+
+// @Summary Create a new movie
+// @Security ApiKeyAuth
+// @Tags Movies
+// @Accept json
+// @Produce json
+// @Param movie body Movie true "Movie to create"
+// @Success 201 {object} Movie "Movie created"
+// @Failure 400 "Bad request"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 403 {object} util.ErrorResponse "Not authorized for this action"
+// @Failure 500 "Internal server error"
+// @Router /movies [post]
+func (h *Handler) createMovie(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        var m Movie
+        if err := json.NewDecoder(r.Body).Decode(&amp;m); err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov8" title="1">if m.Title == "" </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, "Title is required", http.StatusBadRequest)
+                return
+        }</span> else<span class="cov8" title="1"> if len([]rune(m.Title)) &gt; 150 </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, "Title must be less than 255 characters", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov8" title="1">if len([]rune(m.Description)) &gt; 1000 </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, "Description must be less than 1000 characters", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov8" title="1">if m.Rating &lt; 0 || m.Rating &gt; 10 </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, "Rating must be between 0 and 10", http.StatusBadRequest)
+                return
+        }</span>
+        <span class="cov8" title="1">sqlStatement := `INSERT INTO movies (title, description, release_date, rating) VALUES ($1, $2, $3, $4) RETURNING id`
+        id := 0
+        err := h.db.QueryRow(sqlStatement, m.Title, m.Description, m.ReleaseDate, m.Rating).Scan(&amp;id)
+        if err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">m.ID = id
+        util.SendJSONResponse(w, r, m, http.StatusCreated)</span>
+}
+
+// @Summary Update a movie
+// @Security ApiKeyAuth
+// @Tags Movies
+// @Accept json
+// @Produce json
+// @Param movie body Movie true "Movie with updated information"
+// @Success 200 {object} Movie "Movie updated"
+// @Failure 400 "Bad request"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 403 {object} util.ErrorResponse "Not authorized for this action"
+// @Failure 500 "Internal server error"
+// @Router /movies [put]
+func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        var m Movie
+        if err := json.NewDecoder(r.Body).Decode(&amp;m); err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sqlStatement := "UPDATE movies SET"
+        params := []interface{}{}
+        index := 2
+
+        if m.Title != "" </span><span class="cov8" title="1">{
+                sqlStatement += " title = $" + strconv.Itoa(index) + ","
+                params = append(params, m.Title)
+                index++
+        }</span>
+        <span class="cov8" title="1">if m.Description != "" </span><span class="cov8" title="1">{
+                sqlStatement += " description = $" + strconv.Itoa(index) + ","
+                params = append(params, m.Description)
+                index++
+        }</span>
+        <span class="cov8" title="1">if !m.ReleaseDate.IsZero() </span><span class="cov8" title="1">{
+                sqlStatement += " release_date = $" + strconv.Itoa(index) + ","
+                params = append(params, m.ReleaseDate)
+                index++
+        }</span>
+        <span class="cov8" title="1">if m.Rating != 0 </span><span class="cov8" title="1">{
+                sqlStatement += " rating = $" + strconv.Itoa(index) + ","
+                params = append(params, m.Rating)
+        }</span>
+
+        <span class="cov8" title="1">sqlStatement = strings.TrimSuffix(sqlStatement, ",")
+
+        sqlStatement += " WHERE id = $1;"
+
+        params = append([]interface{}{m.ID}, params...)
+
+        _, err := h.db.Exec(sqlStatement, params...)
+        if err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">util.SendJSONResponse(w, r, m, http.StatusOK)</span>
+}
+
+// @Summary Delete a movie
+// @Security ApiKeyAuth
+// @Tags Movies
+// @Param id query int true "Movie ID"
+// @Success 200 "Movie deleted"
+// @Failure 400 "Bad request"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 403 {object} util.ErrorResponse "Not authorized for this action"
+// @Failure 404 {object} util.ErrorResponse "Movie not found"
+// @Failure 500 "Internal server error"
+// @Router /movies [delete]
+func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        id := r.URL.Query().Get("id")
+        if id == "" </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, "Movie ID is required", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sqlStatement := `DELETE FROM actor_movie WHERE movie_id = $1;`
+        _, err := h.db.Exec(sqlStatement, id)
+        if err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">sqlStatement = `DELETE FROM movies WHERE id = $1;`
+        result, err := h.db.Exec(sqlStatement, id)
+        if err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">rowsAffected, err := result.RowsAffected()
+        if err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov8" title="1">if rowsAffected == 0 </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, "Movie not found", http.StatusNotFound)
+                return
+        }</span>
+
+        <span class="cov8" title="1">util.SendJSONResponse(w, r, "Movie deleted", http.StatusOK)</span>
+}
+
+// @Summary Get list of movies
+// @Security ApiKeyAuth
+// @Tags Movies
+// @Produce json
+// @Success 200 {array} Movie "List of movies"
+// @Failure 401 {object} util.ErrorResponse "Not authorized"
+// @Failure 404 {object} util.ErrorResponse "No actors found"
+// @Failure 500 "Internal server error"
+// @Router /movies [get]
+func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        query := "SELECT id, title, description, release_date, rating FROM movies"
+
+        search := r.URL.Query().Get("search")
+        if search != "" </span><span class="cov8" title="1">{
+                query += fmt.Sprintf(" WHERE title ILIKE '%%%s%%'", search)
+        }</span>
+
+        <span class="cov8" title="1">sortBy := r.URL.Query().Get("sortBy")
+        if sortBy != "title" &amp;&amp; sortBy != "rating" &amp;&amp; sortBy != "release_date" </span><span class="cov8" title="1">{
+                sortBy = "rating"
+        }</span>
+        <span class="cov8" title="1">sortOrder := r.URL.Query().Get("sortOrder")
+        if sortOrder == "desc" || (sortBy == "rating" &amp;&amp; sortOrder != "asc") </span><span class="cov8" title="1">{
+                sortBy += " DESC"
+        }</span> else<span class="cov0" title="0"> {
+                sortBy += " ASC"
+        }</span>
+
+        <span class="cov8" title="1">query += fmt.Sprintf(" ORDER BY %s", sortBy)
+        log.Println(query)
+        rows, err := h.db.Query(query)
+        if err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov8" title="1">defer rows.Close()
+
+        movies := []Movie{}
+        for rows.Next() </span><span class="cov8" title="1">{
+                var m Movie
+                if err := rows.Scan(&amp;m.ID, &amp;m.Title, &amp;m.Description, &amp;m.ReleaseDate, &amp;m.Rating); err != nil </span><span class="cov0" title="0">{
+                        util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                        return
+                }</span>
+                <span class="cov8" title="1">movies = append(movies, m)</span>
+        }
+        <span class="cov8" title="1">if err := rows.Err(); err != nil </span><span class="cov0" title="0">{
+                util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov8" title="1">if len(movies) == 0 </span><span class="cov8" title="1">{
+                util.SendJSONError(w, r, "No movies found", http.StatusNotFound)
+                return
+        }</span>
+        <span class="cov8" title="1">util.SendJSONResponse(w, r, movies, http.StatusOK)</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

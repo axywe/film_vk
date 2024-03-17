@@ -1,66 +1,66 @@
-# Фильмотека
+# Film library
 
-## Задание
-<p><p>Необходимо разработать бэкенд приложения “Фильмотека”, который предоставляет REST API для управления базой данных фильмов.</p>
+## Task
+<p><p>It is necessary to develop the backend of the Filmoteka application, which provides a REST API for managing the movie database.</p>
 
-<p>Приложение должно поддерживать следующие функции:</p>
+<p>The application must support the following functions:</p>
 
 <ul>
-	<li>добавление информации об актёре (имя, пол, дата рождения),</li>
-	<li>изменение информации об актёре.</li>
+	<li>adding information about the actor (name, gender, date of birth),</li>
+	<li>changing information about the actor.</li>
 </ul>
 
-<p>Возможно изменить любую информацию об актёре, как частично, так и полностью:</p>
+<p>It is possible to change any information about the actor, both partially and completely:</p>
 
 <ul>
-	<li>удаление информации об актёре,</li>
-	<li>добавление информации о фильме.</li>
+	<li>deleting information about the actor,</li>
+	<li>adding information about the movie.</li>
 </ul>
 
-<p>При добавлении фильма указываются его название (не менее 1 и не более 150 символов), описание (не более 1000 символов), дата выпуска, рейтинг (от 0 до 10) и список актёров:</p>
+<p>When adding a film, its title (at least 1 and no more than 150 characters), description (no more than 1000 characters), release date, rating (from 0 to 10) and a list of actors are indicated:</p>
 
 <ul>
-	<li>изменение информации о фильме.</li>
+	<li>changing information about the movie.</li>
 </ul>
 
-<p>Возможно изменить любую информацию о фильме, как частично, так и полностью:</p>
+<p>It is possible to change any information about the film, both partially and completely:</p>
 
 <ul>
-	<li>удаление информации о фильме,</li>
-	<li>получение списка фильмов с возможностью сортировки по названию, по рейтингу, по дате выпуска. По умолчанию используется сортировка по рейтингу (по убыванию),</li>
-	<li>поиск фильма по фрагменту названия, по фрагменту имени актёра,</li>
-	<li>получение списка актёров, для каждого актёра выдаётся также список фильмов с его участием,</li>
-	<li>API должен быть закрыт авторизацией,</li>
-	<li>поддерживаются две роли пользователей - обычный пользователь и администратор. Обычный пользователь имеет доступ только на получение данных и поиск, администратор - на все действия. Для упрощения можно считать, что соответствие пользователей и ролей задаётся вручную (например, напрямую через БД).</li>
+	<li>deleting information about the movie,</li>
+	<li>getting a list of movies with the ability to sort by title, by rating, by release date. By default, sorting by rating (descending) is used,</li>
+	<li>search for a movie by a fragment of the title, by a fragment of the actor's name,</li>
+	<li>getting a list of actors, for each actor a list of films with his participation is also given,</li>
+	<li>The API must be closed by authorization,</li>
+	<li>two user roles are supported - regular user and administrator. An ordinary user has access only to receive data and search, an administrator has access to all actions. To simplify it, we can assume that the correspondence of users and roles is set manually (for example, directly through the database).</li>
 </ul>
 
-<p>Требования к реализации:</p>
+<p>Implementation requirements:</p>
 
 <ul>
-	<li>язык реализации - go,</li>
-	<li>для хранения данных используется реляционная СУБД (предпочтительно - PostgreSQL),</li>
-	<li>предоставлена спецификация на API (в формате Swagger 2.0 или OpenAPI 3.0).</li>
+	<li>the implementation language is go,</li>
+	<li>a relational database management system (preferably PostgreSQL) is used for data storage,</li>
+	<li>API specification is provided (in Swagger 2.0 or OpenAPI 3.0 format).</li>
 </ul>
 
-<p>Бонус: используется подход api-first (генерация кода из спецификации) или code-first (генерация спецификации из кода).</p>
+<p>Bonus: the api-first (code generation from the specification) or code-first (specification generation from the code) approach is used.</p>
 
 <ul>
-	<li>Для реализации http сервера разрешается использовать только стандартную библиотеку http (без фреймворков),</li>
-	<li>логирование - в лог должна попадать базовая информация об обрабатываемых запросах, ошибки,</li>
-	<li>код приложения покрыт юнит-тестами не менее чем на 70%,</li>
-	<li>Dockerfile для сборки образа,</li>
-	<li>docker-compose файл для запуска окружения с работающим приложением и СУБД.</li>
+	<li>To implement an http server, it is allowed to use only the standard http library (without frameworks),</li>
+	<li>logging - the log should contain basic information about the requests being processed, errors,</li>
+	<li>the application code is covered by unit tests by at least 70%,</li>
+	<li>Dockerfile for building the image,</li>
+	<li>docker-compose file for launching an environment with a running application and DBMS.</li>
 </ul></p>
 
-## Необходимые инструменты
+## Necessary tools
 
 - Docker
 - Go 1.17
 - PostgreSQL
 
-## Установка и запуск
+## Installation and launch
 
-Создайте файл .env в корне проекта и укажите в нем переменные окружения:
+Create a file.env in the root of the project and specify the environment variables in it:
 ```
 POSTGRES_USER=filmotheka_user
 POSTGRES_PASSWORD=filmotheka_pass
@@ -69,13 +69,23 @@ POSTGRES_PORT=5432
 POSTGRES_HOST=db
 SERVER_PORT=8080
 ```
-После этого можно запустить приложение с помощью команды:
+After that, you can launch the application using the command:
 ```bash
 docker-compose up --build
 ```
 
-## Тестирование
+## Testing
 
 ```bash
-go test ./... -v -coverprofile=test/cover.out && go tool cover -html=test/cover.out -o test/cover.html&& open test/cover.html
+go test ./... -v -coverprofile=coverage/cover.out && go tool cover -html=coverage/cover.out -o coverage/cover.html && open coverage/cover.html
 ```
+
+## Swagger
+
+```bash
+swag init -g cmd/filmotheka/main.go
+```
+
+## Documentation
+
+Documentation is available at http://localhost:8080/swagger/index.html

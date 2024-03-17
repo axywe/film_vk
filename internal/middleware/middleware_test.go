@@ -20,7 +20,7 @@ func generateToken(role float64, secretKey string) string {
 }
 
 func TestRoleCheckMiddleware(t *testing.T) {
-	secretKey := "your_secret_key" // Ensure this matches the key used in the middleware
+	secretKey := "your_secret_key" 
 
 	tests := []struct {
 		name           string
@@ -82,10 +82,8 @@ func TestRoleCheckMiddlewareWithError(t *testing.T) {
 func TestRoleCheckMiddlewareWithInvalidClaims(t *testing.T) {
 	secretKey := "your_secret_key"
 
-	// Generate a token with invalid claims structure
 	generateInvalidClaimsToken := func() string {
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			// Intentionally omitting the "role" field or setting it to a non-float type
 			"not_role": "should_fail",
 		})
 		tokenString, _ := token.SignedString([]byte(secretKey))

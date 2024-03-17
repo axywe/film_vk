@@ -82,7 +82,7 @@ func (h *Handler) createActor(w http.ResponseWriter, r *http.Request) {
 		sqlStatement := `INSERT INTO actor_movie (actor_id, movie_id) VALUES ($1, $2)`
 		_, err := h.db.Exec(sqlStatement, a.ID, movie.ID)
 		if err != nil {
-			if pqErr, ok := err.(*pq.Error); ok { // Проверяем, является ли ошибка ошибкой PostgreSQL
+			if pqErr, ok := err.(*pq.Error); ok { 
 				switch pqErr.Code {
 				case "23503":
 					util.SendJSONError(w, r, "Foreign key constraint violation", http.StatusBadRequest)

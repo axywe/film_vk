@@ -176,7 +176,6 @@ func TestDeleteMovieEnsuringDeletion(t *testing.T) {
 
 	h := movie.NewHandler(db)
 
-	// Create a new movie to ensure there is a movie to delete
 	newMovie := movie.Movie{
 		Title:       "Test Movie for Deletion",
 		Description: "A test movie to be deleted",
@@ -188,7 +187,6 @@ func TestDeleteMovieEnsuringDeletion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create movie for deletion test: %v", err)
 	}
-	// Now delete the movie
 	deleteReq, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("/movies?id=%d", createdMovieID), nil)
 	if err != nil {
 		t.Fatalf("Unable to create request for movie deletion: %v", err)
