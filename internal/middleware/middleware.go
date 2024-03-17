@@ -25,19 +25,19 @@ func RoleCheckMiddleware(next http.Handler) http.Handler {
 			util.SendJSONError(w, r, "Invalid token", http.StatusUnauthorized)
 			return
 		}
-
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			role := claims["role"].(float64)
-
-			if role == 1 {
-				next.ServeHTTP(w, r)
-			} else if role == 2 && r.Method == http.MethodGet {
-				next.ServeHTTP(w, r)
+			if role, ok := claims["role"].(float64); ok {
+				if role == 1 {
+					next.ServeHTTP(w, r)
+				} else if role == 2 && r.Method == http.MethodGet {
+					next.ServeHTTP(w, r)
+				} else {
+					util.SendJSONError(w, r, "Not authorized for this action", http.StatusForbidden)
+				}
 			} else {
-				util.SendJSONError(w, r, "Not authorized for this action", http.StatusForbidden)
+				util.SendJSONError(w, r, "Invalid token claims: role missing or invalid", http.StatusUnauthorized)
 			}
-		} else {
-			util.SendJSONError(w, r, "Invalid token claims", http.StatusUnauthorized)
 		}
+
 	})
 }

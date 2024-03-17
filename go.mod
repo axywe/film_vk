@@ -9,7 +9,11 @@ require (
 	golang.org/x/crypto v0.21.0
 )
 
-require github.com/swaggo/files v1.0.1 // indirect
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/swaggo/files v1.0.1 // indirect
+)
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
@@ -26,6 +30,7 @@ require (
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/stretchr/testify v1.9.0
 	github.com/swaggo/http-swagger v1.3.4
 	golang.org/x/net v0.22.0 // indirect
 )

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/axywe/filmotheka_vk/util"
+	"github.com/lib/pq"
 )
 
 type Actor struct {
@@ -78,10 +79,20 @@ func (h *Handler) createActor(w http.ResponseWriter, r *http.Request) {
 	a.ID = id
 
 	for _, movie := range a.Movies {
-		sqlStatement = `INSERT INTO actor_movie (actor_id, movie_id) VALUES ($1, $2)`
+		sqlStatement := `INSERT INTO actor_movie (actor_id, movie_id) VALUES ($1, $2)`
 		_, err := h.db.Exec(sqlStatement, a.ID, movie.ID)
 		if err != nil {
-			util.SendJSONError(w, r, err.Error(), http.StatusInternalServerError)
+			if pqErr, ok := err.(*pq.Error); ok { // Проверяем, является ли ошибка ошибкой PostgreSQL
+				switch pqErr.Code {
+				case "23503":
+					util.SendJSONError(w, r, "Foreign key constraint violation", http.StatusBadRequest)
+					return
+				default:
+					util.SendJSONError(w, r, "Internal server error", http.StatusInternalServerError)
+					return
+				}
+			}
+			util.SendJSONError(w, r, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 	}

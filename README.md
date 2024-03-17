@@ -73,3 +73,9 @@ SERVER_PORT=8080
 ```bash
 docker-compose up --build
 ```
+
+## Тестирование
+
+```bash
+go test ./... -v -coverprofile=test/cover.out && go tool cover -html=test/cover.out -o test/cover.html&& open test/cover.html
+```
